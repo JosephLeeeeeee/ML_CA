@@ -48,12 +48,14 @@ class MAP():
         px = np.zeros((self.n_classes, self.sample_dim))
         for i in range(self.n_classes):
             px[i, :] = np.mean(self.sample_mask(i), axis=0)
-        return px
+        return Px_omega
     # todo: px_omega, p_omega and gx are not determined yet
 
+
+
 if __name__ == '__main__':
-    data = loadmat('Data_Train.mat')
-    labels = loadmat('Label_Train.mat')
+    data = loadmat('Data/Data_Train.mat')
+    labels = loadmat('Data/Label_Train.mat')
 
     data = np.array(data['Data_Train'])
     labels = np.array(labels['Label_Train'])
