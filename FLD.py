@@ -45,7 +45,6 @@ class LDA():
         self.transformed = self.transformed()  # transformed data
         self.train_accuracy = self.get_train_accuracy()  # train_accuracy
         self.plot()  # plot
-        self.test_sample = self.test_sample() # test_sample
         self.test_accuracy = self.get_test_accuracy()  # test_accuracy
 
     def get_mean(self):
@@ -170,8 +169,8 @@ class LDA():
         return float
 
 if __name__ == '__main__':
-    data = loadmat('Data_Train.mat')
-    labels = loadmat('Label_Train.mat')
+    data = loadmat('Data/Data_Train.mat')
+    labels = loadmat('Data/Label_Train.mat')
 
     data = np.array(data['Data_Train'])
     labels = np.array(labels['Label_Train'])
@@ -183,4 +182,4 @@ if __name__ == '__main__':
 
     # ad = max_diff(np.array([[-0.8, -2.3], [-2.3, -0.4], [-1.7, -0.8]]))
     # print(ad)
-    print(LDA.get_accuracy(lda), '%')
+    print(LDA.get_train_accuracy(lda), '%')
