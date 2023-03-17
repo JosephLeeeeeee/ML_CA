@@ -17,7 +17,7 @@ def max_diff(list):
 
 
 class LDA():
-    def __init__(self, train_sample, train_label,test_sample,test_label):
+    def __init__(self, train_sample, train_label,test_sample=np.array([[]]),test_label=np.array([[]])):
         self.sample = train_sample
         self.label = train_label
         self.test_sample = test_sample
@@ -136,12 +136,14 @@ class LDA():
             plt.scatter(points[0], 0, color=np.array(colors)[color], alpha=0.5)
         plt.legend(["Class 1", "Class 2", "Class 3"])
         plt.show()
+
         plt.figure(2, figsize=(10, 5))
         plt.title('Projection on w2')
         for points, color in zip(self.transformed[1], self.label - 1):
             plt.scatter(points[0], 0, color=np.array(colors)[color], alpha=0.5)
         plt.legend(["Class 1", "Class 2", "Class 3"])
         plt.show()
+
         plt.figure(3, figsize=(7, 7))
         plt.title('Projection on w1 and w2')
         for points, color in zip(self.transformed[2], self.label - 1):
