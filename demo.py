@@ -1,16 +1,13 @@
 import numpy as np
-import pandas as pd
-# eig_vals = np.array([1, 2, 3, 4])
-# eig_vecs = np.array([[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]])
 
-# asd = np.abs(eig_vals)
-matrix = [[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]]
-eig_vals, eig_vecs = np.linalg.eig(matrix)
-eig_pairs = [(np.abs(eig_vals[i]), eig_vecs[:, i]) for i in range(len(eig_vals))]
-eig_pairs = sorted(eig_pairs, key=lambda k: k[0], reverse=True)
-w = pd.DataFrame.merge((eig_pairs[i][1].reshape(4, 1)) for i in range(len(eig_vals)))
+# 创建一个 120 行 1 列的数组
+arr = np.random.rand(120, 1)
 
-a = np.array([1,2,3,4,5,6,7,8,9,10])
-b = a.reshape(10,1)
-print(a)
-print(b)
+# 将数组转换为矩阵
+mat = np.matrix(arr)
+
+# 将结果赋值给目标矩阵的第一列
+target_matrix = np.zeros((120, 3))  # 创建一个 120 行 3 列的零矩阵
+target_matrix[0] = mat             # 将 mat 的所有元素赋值给 target_matrix 的第一列
+
+print(target_matrix)
