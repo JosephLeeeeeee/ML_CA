@@ -21,16 +21,18 @@ class MAP():
             self.nSamples.append(temp.count(self.classes[i]))
         self.mean = self.get_mean()  # mean of each class
         self.Cov = self.get_Cov()  # Covariance matrix
-        # self.decision = self.make_decision()  # decision boundary
+
         self.sample_mask = self.sample_mask(i)  # sample mask
         self.Px_omega = self.get_Px_omega()  # Px_omega
-        self.P_omega = self.get_P_omega() # P_omega
-        self.gx = self.get_gx() # gx
+        self.P_omega = self.get_P_omega()  # P_omega
+        self.gx = self.get_gx()  # gx
+        self.decision = self.make_decision()  # decision boundary
+        self.train_accuracy = self.get_train_accuracy()  # train_accuracy
 
     def get_mean(self):
         mean = np.zeros((self.n_classes, self.sample_dim))
         for i in range(self.n_classes):
-            mean[i, :] = np.mean(self.sample_mask(i), axis=0)/self.nSamples[i]
+            mean[i, :] = np.mean(self.sample_mask(i), axis=0) / self.nSamples[i]
         return mean
 
     def sample_mask(self, i):
@@ -42,25 +44,22 @@ class MAP():
         Cov = np.zeros((self.n_classes, self.sample_dim, self.sample_dim))
         for i in range(self.n_classes):
             temp = self.sample_mask(i) - self.mean[i, :]
-            Cov[i] += 1/self.nSamples[i] * np.dot(temp.T, temp)
+            Cov[i] += 1 / self.nSamples[i] * np.dot(temp.T, temp)
         return Cov
 
     def get_Px_omega(self):
         Px_omega = np.zeros((self.sample_num, self.n_classes))
         for i in range(self.n_classes):
-            aaa = 1/((2*np.pi)**(self.sample_dim/2)*np.linalg.det(self.Cov[i])**(1/2))
-            bbb = np.dot((self.sample-self.mean[i,:]), np.linalg.inv(self.Cov[i]))
-            ccc = np.zeros((self.sample_num,1))
+            aaa = 1 / ((2 * np.pi) ** (self.sample_dim / 2) * np.linalg.det(self.Cov[i]) ** (1 / 2))
+            bbb = np.dot((self.sample - self.mean[i, :]), np.linalg.inv(self.Cov[i]))
+            ccc = np.zeros((self.sample_num, 1))
             for row in enumerate(bbb):
-                ccc[row[0]] = (np.dot(row[1],(self.sample[row[0],:]-self.mean[i,:])))
-            ddd = np.exp(-1/2*ccc)
-            pxpx = aaa * ddd
-            # ddd = np.exp(bbb)
-            # ccc = aaa * bbb
+                ccc[row[0]] = (np.dot(row[1], (self.sample[row[0], :] - self.mean[i, :])))
+            ddd = np.exp(-1 / 2 * ccc)
+            Px_omega[:,i] = aaa * ddd[:,0]
 
             # Px_omega[:,i] = 1/((2*np.pi)**(self.sample_dim/2)*np.linalg.det(self.Cov[i])**(1/2))*np.exp(-1/2*np.dot(np.dot((self.sample-self.mean[i,:]).T, np.linalg.inv(self.Cov[i])), (self.sample-self.mean[i,:])))
         return Px_omega
-    # todo: px_omega, p_omega and gx are not determined yet
 
     def get_P_omega(self):
         P_omega = np.zeros((self.n_classes, 1))
@@ -69,12 +68,25 @@ class MAP():
         return P_omega
 
     def get_gx(self):
-        gx = np.zeros((self.n_classes, 1))
+        gx = np.zeros((self.sample_num,self.n_classes))
         for i in range(self.n_classes):
-            gx[i] = self.px_omega[i] * self.p_omega[i]
+            gx[:,i] = self.Px_omega[:,i] * self.P_omega[i]
         return gx
 
+    def make_decision(self):
+        decision = np.zeros((self.sample_num, 1))
+        for i in range(self.sample_num):
+            decision[i] = np.argmax(self.gx[i,:])+1
+        return decision
 
+    def get_train_accuracy(self):
+        correct = 0
+        for i in range(self.sample_num):
+            if self.decision[i] == self.label[i]:
+                correct += 1
+        accuracy = (correct * 100) / self.sample_num
+        float = '{:.2f}'.format(accuracy)
+        return float
 
 
 if __name__ == '__main__':
@@ -84,4 +96,5 @@ if __name__ == '__main__':
     data = np.array(data['Data_Train'])
     labels = np.array(labels['Label_Train'])
 
-    MAP(data, labels)
+    map = MAP(data, labels)
+    print(MAP.get_train_accuracy(map),'%')
