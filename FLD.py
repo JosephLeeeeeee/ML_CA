@@ -17,7 +17,7 @@ def max_diff(list):
 
 
 class LDA():
-    def __init__(self, train_sample, train_label,test_sample=np.array([[]]),test_label=np.array([[]])):
+    def __init__(self, train_sample, train_label, test_sample=np.array([[]]), test_label=np.array([[]])):
         self.sample = train_sample
         self.label = train_label
         self.test_sample = test_sample
@@ -38,11 +38,12 @@ class LDA():
         self.eig_vals, self.eig_vecs = self.get_eig()  # eigenvalues and eigenvectors
         self.w = self.get_w()  # projection matrix
         self.w0 = self.get_w0()  # w0
+        self.transformed = self.transformed()  # transformed data
+        self.projected = self.get_projection()  # projected data
         self.decision = self.make_decision()  # decision boundary
 
-        self.projected = self.get_projection()  # projected data
         self.sample_mask = self.sample_mask(i)  # sample mask
-        self.transformed = self.transformed()  # transformed data
+
         self.train_accuracy = self.get_train_accuracy()  # train_accuracy
         self.plot()  # plot
         self.test_accuracy = self.get_test_accuracy()  # test_accuracy
@@ -64,7 +65,8 @@ class LDA():
         Sb = np.zeros((self.sample_dim, self.sample_dim))
         for i in range(self.n_classes):
             temp = self.mean[i, :] - np.mean(self.sample, axis=0)
-            Sb += self.nSamples[i] * np.dot(temp.T, temp)
+            tempp = temp.reshape(1, self.sample_dim)
+            Sb += self.nSamples[i] * np.dot(tempp.T, tempp)
         return Sb
 
     def get_eig(self):
@@ -100,31 +102,57 @@ class LDA():
 
     def get_w0(self):
         # w0 = np.zeros((self.n_classes-1, 1))
-        w0 = np.array([1.25, 0.6])
+        w0 = np.array([0.365, 1.75])
         return w0
 
     def make_decision(self):
         decision = np.zeros((self.sample_num, 1))
+        distance = np.zeros((self.sample_num, self.n_classes))
         for i in range(self.sample_num):
-            for j in range(2):
-                if (np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[0] > 0) & (
-                        np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] < 0):
-                    decision[i] = 3
-                elif (np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[0] < 0) & (
-                        np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] > 0):
-                    decision[i] = 2
-                elif (np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[0] < 0) & (
-                        np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] < 0):
-                    decision[i] = 1
-                elif (np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[0] > 0) & (
-                        np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] > 0):
-                    if (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0]) > (
-                            np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1]):
-                        decision[i] = 3
-                    elif (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0]) < (
-                            np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1]):
-                        decision[i] = 2
-
+            # for j in range(2):
+            # if (np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[0] > 0) & (
+            #         np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] < 0):
+            #     decision[i] = 1
+            # elif (np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[0] < 0) & (
+            #         np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] > 0):
+            #     decision[i] = 3
+            # elif (np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[0] < 0) & (
+            #         np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] < 0):
+            #     decision[i] = 1
+            # elif (np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[0] > 0) & (
+            #         np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] > 0):
+            #     if (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0]) > (
+            #             np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1]):
+            #         decision[i] = 3
+            #     elif (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0]) < (
+            #             np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1]):
+            #         decision[i] = 1
+            # if (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0] < 0) & (
+            #         np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] < 0):
+            #     decision[i] = 1
+            #     print('1')
+            # elif (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0] > 0) & (
+            #         np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] > 0):
+            #     decision[i] = 3
+            #     print('2')
+            # elif (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0] > 0) & (
+            #         np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] < 0):
+            #     decision[i] = 2
+            #     print('3')
+            # elif (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0] < 0) & (
+            #         np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1] > 0):
+            #     if (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0]) > (
+            #             np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1]):
+            #         decision[i] = 1
+            #         print('4')
+            #     elif (np.dot(self.sample[i, :], self.w[:, 0]) + self.w0[0]) < (
+            #             np.dot(self.sample[i, :], self.w[:, 1]) + self.w0[1]):
+            #         decision[i] = 3
+            #         print('5')
+            for j in range(self.n_classes):
+                distance[i,j] = np.sqrt(sum((self.transformed[2][i, :] - self.projected[j,:]) ** 2))
+        decision = np.argmin(distance, axis=1) + 1
+        decision = decision.reshape(self.sample_num, 1)
         return decision
 
     def plot(self):
@@ -168,6 +196,7 @@ class LDA():
         float = '{:.2f}'.format(accuracy)
         return float
 
+
 if __name__ == '__main__':
     data = loadmat('Data/Data_Train.mat')
     labels = loadmat('Data/Label_Train.mat')
@@ -177,9 +206,9 @@ if __name__ == '__main__':
 
     lda = LDA(data, labels)
     projected = LDA.get_projection(lda)
-    # print(projected)
+    print(projected)
     transformed = LDA.transformed(lda)
 
-    # ad = max_diff(np.array([[-0.8, -2.3], [-2.3, -0.4], [-1.7, -0.8]]))
-    # print(ad)
+    ad = max_diff(np.array([[-1.54, -1.87], [1.79, -1.95], [0.81, -1.63]]))
+    print(ad)
     print(LDA.get_train_accuracy(lda), '%')
