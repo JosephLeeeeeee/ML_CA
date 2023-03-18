@@ -9,3 +9,6 @@ The training data is in Data_Train, and the label is in the file Label_Train. Th
 ## Note:
 + The data is in the format of .mat, which can be loaded by MATLAB.
 + 120 samples are used to train the classifier, tehy are of 4 dimensions.
+
+### ps.
+CA for MPC is also included in this repo, under the folder `Matlab`.
