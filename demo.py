@@ -1,13 +1,20 @@
-import numpy as np
+import openai
+import requests
+openai.api_key =
 
-# 创建一个 120 行 1 列的数组
-arr = np.random.rand(120, 1)
+def generate_image(prompt):
+    response = openai.Image.create(
+        prompt=prompt,
+        n=1, # 生成的图像数量
+        size="512x512", # 图像大小
+    )
 
-# 将数组转换为矩阵
-mat = np.matrix(arr)
+    # 从 API 响应中获取图像 URL
+    image_url = response['data'][0]['url']
 
-# 将结果赋值给目标矩阵的第一列
-target_matrix = np.zeros((120, 3))  # 创建一个 120 行 3 列的零矩阵
-target_matrix[0] = mat             # 将 mat 的所有元素赋值给 target_matrix 的第一列
+    # 从 URL 中下载图像并保存到本地
+    image_data = requests.get(image_url).content
+    with open('generated_image.jpg', 'wb') as f:
+        f.write(image_data)
 
-print(target_matrix)
+generate_image("a red apple on a white background") # 生成一张描述为 "a red apple on a white background" 的图像并保存到本地
