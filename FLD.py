@@ -93,20 +93,20 @@ class LDA():
 
     def make_decision(self):
         # projected to 2D,w1 and w2
-        # distance = np.zeros((self.sample_num, self.n_classes))
-        # for i in range(self.sample_num):
-        #     for j in range(self.n_classes):
-        #         distance[i, j] = np.sqrt(sum((self.transformed[i, :] - self.projected[j, :]) ** 2))
-        # decision = np.argmin(distance, axis=1) + 1
-        # decision = decision.reshape(self.sample_num, 1)
+        distance = np.zeros((self.sample_num, self.n_classes))
+        for i in range(self.sample_num):
+            for j in range(self.n_classes):
+                distance[i, j] = np.sqrt(self.eig_vals[0]*(self.transformed[i, 0] - self.projected[j, 0]) ** 2+self.eig_vals[1]*(self.transformed[i, 1] - self.projected[j, 1]) ** 2)
+        decision = np.argmin(distance, axis=1) + 1
+        decision = decision.reshape(self.sample_num, 1)
 
         # projected to 1D,w1 (which has a better result,LMAO)
-        distance = np.zeros((120,3))
-        for i in range(120):
-            for j in range(3):
-                distance[i,j] += (self.transformed[i,0] - self.projected[j, 0]) ** 2
-        decision = np.argmin(distance, axis=1) + 1
-        decision = decision.reshape(120, 1)
+        # distance = np.zeros((120,3))
+        # for i in range(120):
+        #     for j in range(3):
+        #         distance[i,j] += (self.transformed[i,0] - self.projected[j, 0]) ** 2
+        # decision = np.argmin(distance, axis=1) + 1
+        # decision = decision.reshape(120, 1)
         return decision
 
     def plot(self):
