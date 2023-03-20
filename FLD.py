@@ -2,6 +2,7 @@ from scipy.io import loadmat
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def max_diff(list):
     length = list.shape[0]
     dimension = list.shape[1]
@@ -37,7 +38,6 @@ class LDA():
         self.Sb = self.get_Sb()  # between class scatter matrix
         self.eig_vals, self.eig_vecs = self.get_eig()  # eigenvalues and eigenvectors
         self.w = self.get_w()  # projection matrix
-        # self.w0 = self.get_w0()  # w0
         self.transformed = self.transformed()  # transformed data
         self.projected = self.get_projection()  # projected data
         self.decision = self.make_decision()  # decision boundary
@@ -86,45 +86,82 @@ class LDA():
         return masked_sample
 
     def transformed(self):
-        transformed_on_w1 = np.zeros((self.sample_num, self.n_classes - 1))
-        transformed_on_w2 = np.zeros((self.sample_num, self.n_classes - 1))
         transformed = np.zeros((self.sample_num, self.n_classes - 1))
         for i in range(self.sample_num):
-            transformed_on_w1[i, :] = np.dot(self.sample[i, :], self.w[:, 0])
-            transformed_on_w2[i, :] = np.dot(self.sample[i, :], self.w[:, 1])
             transformed[i, :] = np.dot(self.sample[i, :], self.w[:, 0:self.n_classes - 1])
-        return transformed_on_w1, transformed_on_w2, transformed
+        return transformed
 
     def make_decision(self):
-        distance = np.zeros((self.sample_num, self.n_classes))
-        for i in range(self.sample_num):
-            for j in range(self.n_classes):
-                distance[i, j] = np.sqrt(sum((self.transformed[2][i, :] - self.projected[j, :]) ** 2))
+        # projected to 2D,w1 and w2
+        # distance = np.zeros((self.sample_num, self.n_classes))
+        # for i in range(self.sample_num):
+        #     for j in range(self.n_classes):
+        #         distance[i, j] = np.sqrt(sum((self.transformed[i, :] - self.projected[j, :]) ** 2))
+        # decision = np.argmin(distance, axis=1) + 1
+        # decision = decision.reshape(self.sample_num, 1)
+
+        # projected to 1D,w1 (which has a better result,LMAO)
+        distance = np.zeros((120,3))
+        for i in range(120):
+            for j in range(3):
+                distance[i,j] += (self.transformed[i,0] - self.projected[j, 0]) ** 2
         decision = np.argmin(distance, axis=1) + 1
-        decision = decision.reshape(self.sample_num, 1)
+        decision = decision.reshape(120, 1)
         return decision
 
     def plot(self):
+        sample_restack = []
+
+        for i in range(self.n_classes):
+            temp = np.hstack((self.label == self.classes[i]))
+            masked_sample = self.transformed[temp].reshape(self.nSamples[i], 2)
+            sample_restack.append(masked_sample)
+        sample_restack = np.concatenate(sample_restack, axis=0)
+
+        indices = np.concatenate([np.repeat(i, self.nSamples[i]) for i in range(self.n_classes)])
+        label_restack = indices.reshape(self.sample_num, 1)
+
+        step = np.arange(-self.sample_num / 2, self.sample_num / 2, 1).reshape(self.sample_num, 1)
+
         colors = ['r', 'g', 'b']
+        color_labels = ["Class 1", "Class 2",  "Class 3"]
+        added_label = []
+
         plt.figure(1, figsize=(10, 5))
         plt.title('Projection on w1')
-        for points, color in zip(self.transformed[0], self.label - 1):
-            plt.scatter(points[0], 0, color=np.array(colors)[color], alpha=0.5)
-        plt.legend(["Class 1", "Class 2", "Class 3"])
+        for steps,points, color in zip(step,sample_restack[:,0], label_restack):
+            if color not in added_label:
+                plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5, label=color_labels[color[0]])
+                added_label.append(color)
+            else:
+                plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5)
+        plt.legend()
+        plt.ylabel('w1')
         plt.show()
 
+        added_label = []
         plt.figure(2, figsize=(10, 5))
         plt.title('Projection on w2')
-        for points, color in zip(self.transformed[1], self.label - 1):
-            plt.scatter(points[0], 0, color=np.array(colors)[color], alpha=0.5)
-        plt.legend(["Class 1", "Class 2", "Class 3"])
+        for steps,points, color in zip(step,sample_restack[:,1], label_restack):
+            if color not in added_label:
+                plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5, label=color_labels[color[0]])
+                added_label.append(color)
+            else:
+                plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5)
+        plt.legend()
+        plt.ylabel('w2')
         plt.show()
 
+        added_label = []
         plt.figure(3, figsize=(7, 7))
         plt.title('Projection on w1 and w2')
-        for points, color in zip(self.transformed[2], self.label - 1):
-            plt.scatter(points[0], points[1], color=np.array(colors)[color], alpha=0.5)
-        plt.legend(["Class 1", "Class 2", "Class 3"])
+        for points, color in zip(sample_restack, label_restack):
+            if color not in added_label:
+                plt.scatter(points[0], points[1], color=np.array(colors)[color], alpha=0.5 ,label=color_labels[color[0]])
+                added_label.append(color)
+            else:
+                plt.scatter(points[0], points[1], color=np.array(colors)[color], alpha=0.5 )
+        plt.legend()
         plt.xlabel('w1')
         plt.ylabel('w2')
         plt.show()
