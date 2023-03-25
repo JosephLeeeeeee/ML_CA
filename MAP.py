@@ -4,12 +4,9 @@ from scipy.io import loadmat
 
 class MAP():
     def __init__(self, train_sample, train_label, test_sample=np.array([[]]), test_label=np.array([[]])):
+        # training parameters
         self.sample = train_sample
         self.label = train_label
-        self.test_sample = test_sample
-        self.test_sample_num = self.test_sample.shape[0]
-        self.test_sample_dim = self.test_sample.shape[1]
-        self.test_label = test_label
         self.sample_num = self.sample.shape[0]  # number of samples
         self.sample_dim = self.sample.shape[1]  # number of features
         self.classes = np.unique(self.label)  # labels
@@ -18,12 +15,19 @@ class MAP():
         self.mean = self.get_mean()  # mean of each class
         self.Cov = self.get_Cov()  # Covariance matrix
 
+        # testing parameters
+        self.test_sample = test_sample
+        self.test_label = test_label
+        self.test_sample_num = self.test_sample.shape[0]
+        self.test_sample_dim = self.test_sample.shape[1]
+
         self.sample_mask = self.sample_mask(i=0)  # sample mask
         self.Px_omega = self.get_Px_omega()  # Px_omega
         self.P_omega = self.get_P_omega()  # P_omega
         self.gx = self.get_gx()  # gx
         self.decision = self.make_decision()  # decision boundary
         self.train_accuracy = self.get_train_accuracy()  # train_accuracy
+        self.test_decision = self.get_test_decision()  # test_decision
 
     def get_mean(self):
         mean = np.array([np.mean(self.sample_mask(i), axis=0) for i in range(self.n_classes)])
@@ -76,12 +80,36 @@ class MAP():
         float = '{:.2f}'.format(accuracy)
         return float
 
+    def get_test_decision(self):
+        Px_omega = np.zeros((self.test_sample_num, self.n_classes))
+        for i in range(self.n_classes):
+            aaa = 1 / ((2 * np.pi) ** (self.test_sample_dim / 2) * np.linalg.det(self.Cov[i]) ** (1 / 2))
+            bbb = np.dot((self.test_sample - self.mean[i, :]), np.linalg.inv(self.Cov[i]))
+            ccc = np.zeros((self.test_sample_num, 1))
+            for row in enumerate(bbb):
+                ccc[row[0]] = (np.dot(row[1], (self.test_sample[row[0], :] - self.mean[i, :])))
+            ddd = np.exp(-1 / 2 * ccc)
+            Px_omega[:, i] = aaa * ddd[:, 0]
+
+        gx = np.zeros((self.test_sample_num, self.n_classes))
+        for i in range(self.n_classes):
+            gx[:, i] = Px_omega[:, i] * self.P_omega[i]
+
+        decision = (np.argmax(gx, axis=1) + 1).reshape(self.test_sample_num, 1)
+
+        return decision
+
+
 if __name__ == '__main__':
     data = loadmat('Data/Data_Train.mat')
     labels = loadmat('Data/Label_Train.mat')
+    test_data = loadmat('Data/Data_test.mat')
 
     data = np.array(data['Data_Train'])
     labels = np.array(labels['Label_Train'])
+    test_data = np.array(test_data['Data_test'])
 
-    map = MAP(data, labels)
+    map = MAP(data, labels, test_data)
+
     print('training accuracy is: ', MAP.get_train_accuracy(map), '%')
+    print('test decision is: ', MAP.get_test_decision(map))

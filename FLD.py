@@ -45,7 +45,7 @@ class LDA():
         self.train_accuracy = self.get_train_accuracy()  # train_accuracy
         self.plot()  # plot
 
-        self.test_accuracy = self.get_test_accuracy()  # test_accuracy
+        self.test_decision = self.get_test_decision()  # test_decision
 
     def get_mean(self):
         mean = np.array([np.mean(self.sample_mask(i), axis=0) for i in range(self.n_classes)])
@@ -92,7 +92,7 @@ class LDA():
         return transformed
 
     def make_decision(self):
-        # projected to 2D,w1 and w2
+        # projected to 2D,w1 and w2 with weighted eigenvalues
         distance = np.zeros((self.sample_num, self.n_classes))
         for i in range(self.sample_num):
             for j in range(self.n_classes):
@@ -172,23 +172,31 @@ class LDA():
         float = '{:.2f}'.format(accuracy)
         return float
 
-    def get_test_accuracy(self):
-        correct = 0
+    def get_test_decision(self):
+        transformed_test = np.zeros((self.test_sample_num, self.n_classes - 1))
         for i in range(self.test_sample_num):
-            if self.decision[i] == self.test_label[i]:
-                correct += 1
-        accuracy = (correct * 100) / self.test_sample_num
-        float = '{:.2f}'.format(accuracy)
-        return float
+            transformed_test[i, :] = np.dot(self.test_sample[i, :], self.w[:, 0:self.n_classes - 1])
+
+        distance = np.zeros((self.test_sample_num, self.n_classes))
+        for i in range(self.test_sample_num):
+            for j in range(self.n_classes):
+                distance[i, j] = np.sqrt(self.eig_vals[0]*(transformed_test[i, 0] - self.projected[j, 0]) ** 2+self.eig_vals[1]*(transformed_test[i, 1] - self.projected[j, 1]) ** 2)
+        decision = np.argmin(distance, axis=1) + 1
+        decision = decision.reshape(self.test_sample_num, 1)
+        return decision
+
 
 
 if __name__ == '__main__':
     data = loadmat('Data/Data_Train.mat')
     labels = loadmat('Data/Label_Train.mat')
+    test_data = loadmat('Data/Data_test.mat')
 
     data = np.array(data['Data_Train'])
     labels = np.array(labels['Label_Train'])
+    test_data = np.array(test_data['Data_test'])
 
-    lda = LDA(data, labels)
+    lda = LDA(data, labels,test_data)
 
     print('training accuracy is:', LDA.get_train_accuracy(lda), '%')
+    print('test decision is: ', LDA.get_test_decision(lda))
