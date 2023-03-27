@@ -2,7 +2,7 @@ import numpy as np
 from scipy.io import loadmat
 
 
-class MAP():
+class MAP:
     def __init__(self, train_sample, train_label, test_sample=np.array([[]]), test_label=np.array([[]])):
         # training parameters
         self.sample = train_sample
@@ -22,10 +22,10 @@ class MAP():
         self.test_sample_dim = self.test_sample.shape[1]
 
         self.sample_mask = self.sample_mask(i=0)  # sample mask
-        self.Px_omega = self.get_Px_omega()  # Px_omega
+        self.Px_omega = self.get_Px_omega(self.sample, self.sample_num)  # Px_omega
         self.P_omega = self.get_P_omega()  # P_omega
-        self.gx = self.get_gx()  # gx
-        self.decision = self.make_decision()  # decision boundary
+        self.gx = self.get_gx(self.Px_omega, self.sample_num)  # gx
+        self.decision = self.make_decision(self.sample_num, self.gx)  # decision boundary
         self.train_accuracy = self.get_train_accuracy()  # train_accuracy
         self.test_decision = self.get_test_decision()  # test_decision
 
@@ -45,14 +45,14 @@ class MAP():
             Cov[i] += 1 / self.nSamples[i] * np.dot(temp.T, temp)
         return Cov
 
-    def get_Px_omega(self):
-        Px_omega = np.zeros((self.sample_num, self.n_classes))
+    def get_Px_omega(self, sample, sample_num):
+        Px_omega = np.zeros((sample_num, self.n_classes))
         for i in range(self.n_classes):
             aaa = 1 / ((2 * np.pi) ** (self.sample_dim / 2) * np.linalg.det(self.Cov[i]) ** (1 / 2))
-            bbb = np.dot((self.sample - self.mean[i, :]), np.linalg.inv(self.Cov[i]))
-            ccc = np.zeros((self.sample_num, 1))
+            bbb = np.dot((sample - self.mean[i, :]), np.linalg.inv(self.Cov[i]))
+            ccc = np.zeros((sample_num, 1))
             for row in enumerate(bbb):
-                ccc[row[0]] = (np.dot(row[1], (self.sample[row[0], :] - self.mean[i, :])))
+                ccc[row[0]] = (np.dot(row[1], (sample[row[0], :] - self.mean[i, :])))
             ddd = np.exp(-1 / 2 * ccc)
             Px_omega[:, i] = aaa * ddd[:, 0]
             # Px_omega[:,i] = 1/((2*np.pi)**(self.sample_dim/2)*np.linalg.det(self.Cov[i])**(1/2))*np.exp(-1/2*np.dot(np.dot((self.sample-self.mean[i,:]).T, np.linalg.inv(self.Cov[i])), (self.sample-self.mean[i,:])))
@@ -64,14 +64,14 @@ class MAP():
             P_omega[i] = self.nSamples[i] / self.sample_num
         return P_omega
 
-    def get_gx(self):
-        gx = np.zeros((self.sample_num, self.n_classes))
+    def get_gx(self, Px_omega, sample_num):
+        gx = np.zeros((sample_num, self.n_classes))
         for i in range(self.n_classes):
-            gx[:, i] = self.Px_omega[:, i] * self.P_omega[i]
+            gx[:, i] = Px_omega[:, i] * self.P_omega[i]
         return gx
 
-    def make_decision(self):
-        decision = (np.argmax(self.gx, axis=1) + 1).reshape(self.sample_num, 1)
+    def make_decision(self, sample_num, gx):
+        decision = (np.argmax(gx, axis=1) + 1).reshape(sample_num, 1)
         return decision
 
     def get_train_accuracy(self):
@@ -81,22 +81,9 @@ class MAP():
         return float
 
     def get_test_decision(self):
-        Px_omega = np.zeros((self.test_sample_num, self.n_classes))
-        for i in range(self.n_classes):
-            aaa = 1 / ((2 * np.pi) ** (self.test_sample_dim / 2) * np.linalg.det(self.Cov[i]) ** (1 / 2))
-            bbb = np.dot((self.test_sample - self.mean[i, :]), np.linalg.inv(self.Cov[i]))
-            ccc = np.zeros((self.test_sample_num, 1))
-            for row in enumerate(bbb):
-                ccc[row[0]] = (np.dot(row[1], (self.test_sample[row[0], :] - self.mean[i, :])))
-            ddd = np.exp(-1 / 2 * ccc)
-            Px_omega[:, i] = aaa * ddd[:, 0]
-
-        gx = np.zeros((self.test_sample_num, self.n_classes))
-        for i in range(self.n_classes):
-            gx[:, i] = Px_omega[:, i] * self.P_omega[i]
-
-        decision = (np.argmax(gx, axis=1) + 1).reshape(self.test_sample_num, 1)
-
+        Px_omega_test = self.get_Px_omega(self.test_sample, self.test_sample_num)
+        gx = self.get_gx(Px_omega_test, self.test_sample_num)
+        decision = self.make_decision(self.test_sample_num, gx)
         return decision
 
 

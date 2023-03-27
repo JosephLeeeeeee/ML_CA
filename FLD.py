@@ -3,19 +3,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def max_diff(list):
-    length = list.shape[0]
-    dimension = list.shape[1]
+def max_diff(lst):
+    length = lst.shape[0]
+    dimension = lst.shape[1]
     dist = np.zeros((length, dimension))
     for i in range(dimension):
         for j in range(length):
             for k in range(length):
-                dist[j][i] += abs(list[j][i] - list[k][i])
+                dist[j][i] += abs(lst[j][i] - lst[k][i])
     argmax = dist.argmax(axis=0)
     return argmax
 
 
-class LDA():
+def plotit(steps, points, label):
+    colors = ['r', 'g', 'b']
+    color_labels = ["Class 1", "Class 2", "Class 3"]
+    added_label = []
+    for steps, points, color in zip(steps, points, label):
+        if color not in added_label:
+            plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5, label=color_labels[color[0]])
+            added_label.append(color)
+        else:
+            plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5)
+    plt.legend()
+
+
+class LDA:
     def __init__(self, train_sample, train_label, test_sample=np.array([[]]), test_label=np.array([[]])):
         # training parameters
         self.sample = train_sample
@@ -38,9 +51,9 @@ class LDA():
         self.Sb = self.get_Sb()  # between class scatter matrix
         self.eig_vals, self.eig_vecs = self.get_eig()  # eigenvalues and eigenvectors
         self.w = self.get_w()  # projection matrix
-        self.transformed = self.transformed()  # transformed data
-        self.projected = self.get_projection()  # projected data
-        self.decision = self.make_decision()  # decision boundary
+        self.transformed = self.get_transformed(self.sample, self.sample_num)  # transformed data
+        self.projected = self.get_mean_projection()  # get projection of each class's mean
+        self.decision = self.make_decision(self.sample_num, self.transformed)  # decision boundary
         self.sample_mask = self.sample_mask(i=0)  # sample mask
         self.train_accuracy = self.get_train_accuracy()  # train_accuracy
         self.plot()  # plot
@@ -76,7 +89,7 @@ class LDA():
         w = np.hstack((eig_pairs[i][1].reshape(self.sample_dim, 1) for i in range(len(self.eig_vals))))
         return w
 
-    def get_projection(self):
+    def get_mean_projection(self):
         projection = np.array([np.dot(self.mean[i, :], self.w[:, 0:self.n_classes - 1]) for i in range(self.n_classes)])
         return projection
 
@@ -85,20 +98,22 @@ class LDA():
         masked_sample = self.sample[temp].reshape(self.nSamples[i], self.sample_dim)
         return masked_sample
 
-    def transformed(self):
-        transformed = np.zeros((self.sample_num, self.n_classes - 1))
-        for i in range(self.sample_num):
-            transformed[i, :] = np.dot(self.sample[i, :], self.w[:, 0:self.n_classes - 1])
+    def get_transformed(self, sample, sample_num):
+        transformed = np.zeros((sample_num, self.n_classes - 1))
+        for i in range(sample_num):
+            transformed[i, :] = np.dot(sample[i, :], self.w[:, 0:self.n_classes - 1])
         return transformed
 
-    def make_decision(self):
+    def make_decision(self, sample_num, transformed):
         # projected to 2D,w1 and w2 with weighted eigenvalues
-        distance = np.zeros((self.sample_num, self.n_classes))
-        for i in range(self.sample_num):
+        distance = np.zeros((sample_num, self.n_classes))
+        for i in range(sample_num):
             for j in range(self.n_classes):
-                distance[i, j] = np.sqrt(self.eig_vals[0]*(self.transformed[i, 0] - self.projected[j, 0]) ** 2+self.eig_vals[1]*(self.transformed[i, 1] - self.projected[j, 1]) ** 2)
+                distance[i, j] = np.sqrt(
+                    self.eig_vals[0] * (transformed[i, 0] - self.projected[j, 0]) ** 2 + self.eig_vals[1] * (
+                            transformed[i, 1] - self.projected[j, 1]) ** 2)
         decision = np.argmin(distance, axis=1) + 1
-        decision = decision.reshape(self.sample_num, 1)
+        decision = decision.reshape(sample_num, 1)
 
         # projected to 1D,w1 (which has a better result,LMAO)
         # distance = np.zeros((120,3))
@@ -123,45 +138,21 @@ class LDA():
 
         step = np.arange(-self.sample_num / 2, self.sample_num / 2, 1).reshape(self.sample_num, 1)
 
-        colors = ['r', 'g', 'b']
-        color_labels = ["Class 1", "Class 2",  "Class 3"]
-        added_label = []
-
         plt.figure(1, figsize=(10, 5))
         plt.title('Projection on w1')
-        for steps,points, color in zip(step,sample_restack[:,0], label_restack):
-            if color not in added_label:
-                plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5, label=color_labels[color[0]])
-                added_label.append(color)
-            else:
-                plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5)
-        plt.legend()
+        plotit(step, sample_restack[:, 0], label_restack)
         plt.ylabel('w1')
         plt.show()
 
-        added_label = []
         plt.figure(2, figsize=(10, 5))
         plt.title('Projection on w2')
-        for steps,points, color in zip(step,sample_restack[:,1], label_restack):
-            if color not in added_label:
-                plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5, label=color_labels[color[0]])
-                added_label.append(color)
-            else:
-                plt.scatter(steps, points, color=np.array(colors)[color], alpha=0.5)
-        plt.legend()
+        plotit(step, sample_restack[:, 1], label_restack)
         plt.ylabel('w2')
         plt.show()
 
-        added_label = []
         plt.figure(3, figsize=(7, 7))
         plt.title('Projection on w1 and w2')
-        for points, color in zip(sample_restack, label_restack):
-            if color not in added_label:
-                plt.scatter(points[0], points[1], color=np.array(colors)[color], alpha=0.5 ,label=color_labels[color[0]])
-                added_label.append(color)
-            else:
-                plt.scatter(points[0], points[1], color=np.array(colors)[color], alpha=0.5 )
-        plt.legend()
+        plotit(sample_restack[:, 0], sample_restack[:, 1], label_restack)
         plt.xlabel('w1')
         plt.ylabel('w2')
         plt.show()
@@ -169,22 +160,13 @@ class LDA():
     def get_train_accuracy(self):
         correct = sum(np.all(self.decision == self.label, axis=1))
         accuracy = (correct * 100) / self.sample_num
-        float = '{:.2f}'.format(accuracy)
-        return float
+        acc_float = '{:.2f}'.format(accuracy)
+        return acc_float
 
     def get_test_decision(self):
-        transformed_test = np.zeros((self.test_sample_num, self.n_classes - 1))
-        for i in range(self.test_sample_num):
-            transformed_test[i, :] = np.dot(self.test_sample[i, :], self.w[:, 0:self.n_classes - 1])
-
-        distance = np.zeros((self.test_sample_num, self.n_classes))
-        for i in range(self.test_sample_num):
-            for j in range(self.n_classes):
-                distance[i, j] = np.sqrt(self.eig_vals[0]*(transformed_test[i, 0] - self.projected[j, 0]) ** 2+self.eig_vals[1]*(transformed_test[i, 1] - self.projected[j, 1]) ** 2)
-        decision = np.argmin(distance, axis=1) + 1
-        decision = decision.reshape(self.test_sample_num, 1)
+        transformed_test = self.get_transformed(self.test_sample, self.test_sample_num)
+        decision = self.make_decision(self.test_sample_num, transformed_test)
         return decision
-
 
 
 if __name__ == '__main__':
@@ -196,7 +178,7 @@ if __name__ == '__main__':
     labels = np.array(labels['Label_Train'])
     test_data = np.array(test_data['Data_test'])
 
-    lda = LDA(data, labels,test_data)
+    lda = LDA(data, labels, test_data)
 
     print('training accuracy is:', LDA.get_train_accuracy(lda), '%')
     print('test decision is: ', LDA.get_test_decision(lda))
