@@ -110,8 +110,8 @@ class LDA:
         for i in range(sample_num):
             for j in range(self.n_classes):
                 distance[i, j] = np.sqrt(
-                    self.eig_vals[0] * (transformed[i, 0] - self.projected[j, 0]) ** 2 + self.eig_vals[1] * (
-                            transformed[i, 1] - self.projected[j, 1]) ** 2)
+                    (self.eig_vals[0] * (transformed[i, 0] - self.projected[j, 0])) ** 2 + (self.eig_vals[1] * (
+                            transformed[i, 1] - self.projected[j, 1])) ** 2)
         decision = np.argmin(distance, axis=1) + 1
         decision = decision.reshape(sample_num, 1)
 
